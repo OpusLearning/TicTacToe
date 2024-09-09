@@ -27,21 +27,11 @@ const gameBoardAdd = (() => {
     currentGame = new Array(9).fill(false);
   };
 
-  const addMove = (turn) => {
-    let position = prompt(`Player ${turn}'s turn. Enter a square 0 - 8`);
-    position = parseInt(position);
-
-    if (isNaN(position) || position < 0 || position > 8) {
-      alert("Not a valid position. Pick a number between 0 and 8.");
-      return false;
-    }
-
+  const addMove = (turn, position) => {
     if (!currentGame[position]) {
       currentGame[position] = turn;
-      alert(`${turn} placed at position ${position}`);
       return currentGame;
     } else {
-      alert("This square has been taken");
       return false;
     }
   };
@@ -50,24 +40,21 @@ const gameBoardAdd = (() => {
 })();
 
 const playGame = () => {
+  createGrid();
   let currentTurn = "X";
 
   while (true) {
     let gameBoard = gameBoardAdd.addMove(currentTurn);
 
     if (gameBoard === false) {
-      alert("Invalid move, try again.");
       continue;
     }
 
     if (checkWinningPattern(gameBoard, currentTurn)) {
-      alert(`Winner! ${currentTurn} wins the game!`);
       break;
     }
-    currentTurn = turn.changeturn(currentTurn);
 
     if (!gameBoard.includes(false)) {
-      alert("Game over, it's a draw!");
       break;
     }
   }
@@ -78,5 +65,89 @@ const playGame = () => {
   }
 };
 
-// Start the game
-playGame();
+const gameGrid = (() => {
+  return function createGrid() {
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement("div");
+      cell.id = `cell${i}`;
+      cell.classList.add("tictactoe-cell");
+      cell.dataset.index = i;
+
+      cell.addEventListener("click", function () {
+        gameManager.cellClick(i);
+      });
+
+      gridContainer.appendChild(cell);
+    }
+  };
+})();
+
+const gameManager = (() => {
+  let currentGame = new Array(9).fill(false);
+  let currentPlayer = "X";
+  let gameActive = true;
+
+  const initializeGame = () => {
+    currentPlayer = "X";
+    gameActive = true;
+    currentGame = new Array(9).fill(false);
+    updateDisplay();
+  };
+
+  const handleCellClick = (cellIndex) => {
+    if (gameActive && !currentGame[cellIndex]) {
+      let updatedGame = gameBoardAdd.addMove(currentPlayer, cellIndex);
+      if (updatedGame) {
+        currentGame = updatedGame;
+        updateDisplay();
+        checkWinOrDraw();
+        if (gameActive) {
+          switchTurn();
+        }
+      }
+    }
+  };
+
+  const checkWinOrDraw = () => {
+    if (checkWinningPattern(currentGame, currentPlayer)) {
+      alert(`Player ${currentPlayer} wins!`);
+      gameActive = false;
+    } else if (!currentGame.includes(false)) {
+      alert("It's a draw!");
+      gameActive = false;
+    }
+  };
+
+  const switchTurn = () => {
+    currentPlayer = turn.changeturn(currentPlayer);
+  };
+
+  const resetGame = () => {
+    currentPlayer = "X";
+    gameActive = true;
+    currentGame = new Array(9).fill(false);
+    gameBoardAdd.resetGame();
+    updateDisplay();
+  };
+
+  const updateDisplay = () => {
+    document.querySelectorAll(".tictactoe-cell").forEach((cell, index) => {
+      cell.textContent = currentGame[index] || "";
+    });
+  };
+
+  return {
+    startGame: initializeGame,
+    cellClick: handleCellClick,
+    reset: resetGame,
+  };
+})();
+
+document.getElementById("resetButton").addEventListener("click", () => {
+  gameManager.reset();
+});
+
+window.addEventListener("load", () => {
+  gameGrid();
+  gameManager.startGame();
+});
